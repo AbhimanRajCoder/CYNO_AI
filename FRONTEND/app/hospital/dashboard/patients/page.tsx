@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import DashboardLayout from '@/app/components/dashboard/DashboardLayout';
 import { useAuth } from '@/app/components/auth/AuthProvider';
 import { useSearchParams } from 'next/navigation';
@@ -62,7 +62,7 @@ const cancerTypes = ['lung', 'breast', 'blood', 'colon', 'prostate', 'skin', 'br
 const genderOptions = ['male', 'female', 'other'];
 const statusOptions = ['active', 'discharged', 'critical', 'under_review'];
 
-export default function PatientsPage() {
+function PatientsContent() {
     const { hospital } = useAuth();
     const searchParams = useSearchParams();
     const initialSearch = searchParams.get('search') || '';
@@ -588,5 +588,19 @@ export default function PatientsPage() {
                 </div>
             )}
         </DashboardLayout>
+    );
+}
+
+export default function PatientsPage() {
+    return (
+        <Suspense fallback={
+            <DashboardLayout>
+                <div className="flex items-center justify-center h-[calc(100vh-100px)]">
+                    <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            </DashboardLayout>
+        }>
+            <PatientsContent />
+        </Suspense>
     );
 }
