@@ -1,51 +1,83 @@
-# Python
+# =====================================================
+# CYNO Healthcare Backend - Docker Ignore
+# =====================================================
+
+# Virtual environment
+venv/
+.venv/
+env/
+.env.local
+
+# Python cache
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-venv/
-.venv/
-ENV/
-env/
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+wheels/
+pip-wheel-metadata/
+*.manifest
+*.spec
 
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
+*~
 
 # Git
 .git/
 .gitignore
 
-# Docker
-Dockerfile
-docker-compose*.yml
-.dockerignore
-
-# Local files
-.env.local
-*.log
-*.sqlite
-*.db
-
-# Prisma dev database (we use PostgreSQL in production)
-prisma/dev.db
-prisma/dev.db-journal
-
-# Uploads (mount as volume in production)
-uploads/*
-!uploads/.gitkeep
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
 
 # Documentation
 docs/
 *.md
-!README.md
+!requirements.txt
 
-# Tests
-tests/
-pytest.ini
-.pytest_cache/
-.coverage
-htmlcov/
+# Local database (development only)
+prisma/dev.db
+prisma/dev.db-journal
+*.db
+
+# Environment files (secrets should be passed at runtime)
+.env
+.env.*
+!.env.example
+
+# Uploads directory (mount as volume in production)
+uploads/*
+!uploads/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.docker/
+
+# Miscellaneous
+.DS_Store
+Thumbs.db
+*.bak
+*.tmp
+
+# PaddleOCR models (will be downloaded at runtime)
+.paddleocr/

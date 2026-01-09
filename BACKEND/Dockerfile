@@ -1,7 +1,12 @@
+# =====================================================
 # CYNO Healthcare Backend - Production Dockerfile
+# =====================================================
 # Multi-stage build for optimized image size
 
-FROM python:3.11-slim as builder
+# =====================================================
+# Stage 1: Builder - Install dependencies
+# =====================================================
+FROM python:3.11-slim-bookworm AS builder
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -13,57 +18,98 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
+    git \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Create and set working directory
 WORKDIR /app
 
-# Copy requirements first for better caching
+# Copy requirements first for better layer caching
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --user --no-cache-dir -r requirements.txt
+# Create a virtual environment and install dependencies
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Production stage
-FROM python:3.11-slim
+# Upgrade pip and install dependencies
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install -r requirements.txt
+
+# =====================================================
+# Stage 2: Runtime - Production image
+# =====================================================
+FROM python:3.11-slim-bookworm AS runtime
+
+# Labels
+LABEL maintainer="CYNO Healthcare Team" \
+      version="1.0.0" \
+      description="CYNO Healthcare Backend API"
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/root/.local/bin:$PATH" \
-    PYTHONPATH="/root/.local/lib/python3.11/site-packages"
+    PYTHONFAULTHANDLER=1 \
+    # Prisma settings
+    PRISMA_PY_DEBUG_GENERATOR=0 \
+    # PaddleOCR settings
+    PADDLEOCR_HOME=/app/.paddleocr \
+    # Application settings
+    APP_HOME=/app \
+    PATH="/opt/venv/bin:$PATH"
 
-# Install runtime dependencies for PaddleOCR and pdf2image
+# Install runtime system dependencies
+# - libpq5: PostgreSQL client library
+# - poppler-utils: PDF to image conversion (pdf2image)
+# - libgl1: OpenGL library (OpenCV dependency)
+# - libglib2.0-0: GLib library (OpenCV dependency)
+# - libgomp1: OpenMP runtime (PaddlePaddle dependency)
+# - libsm6, libxext6, libxrender1: X11 libraries (PaddleOCR)
+# - libatomic1: Required for Prisma CLI on ARM64
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    poppler-utils \
     libgl1 \
     libglib2.0-0 \
+    libgomp1 \
     libsm6 \
     libxext6 \
     libxrender1 \
-    libgomp1 \
-    poppler-utils \
+    libatomic1 \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-WORKDIR /app
+# Create a non-root user for security
+RUN groupadd --gid 1000 appgroup && \
+    useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
 
-# Copy Python packages from builder
-COPY --from=builder /root/.local /root/.local
+# Set working directory
+WORKDIR $APP_HOME
+
+# Copy virtual environment from builder
+COPY --from=builder --chown=appuser:appgroup /opt/venv /opt/venv
 
 # Copy application code
-COPY . .
+COPY --chown=appuser:appgroup . .
 
-# Create uploads directory
-RUN mkdir -p uploads
+# Create necessary directories
+RUN mkdir -p uploads .paddleocr && \
+    chown -R appuser:appgroup $APP_HOME
+
+# Switch to non-root user
+USER appuser
 
 # Generate Prisma client
-RUN python -m prisma generate
+RUN prisma generate
 
-# Expose port
+# Expose the application port
 EXPOSE 8000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/api/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl --fail http://localhost:8000/api/health || exit 1
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run database migrations and start the server
+# Using shell form to allow environment variable expansion
+CMD ["sh", "-c", "prisma db push --skip-generate && uvicorn main:app --host 0.0.0.0 --port 8000"]
