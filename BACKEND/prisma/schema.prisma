@@ -1,0 +1,121 @@
+// Prisma Schema for CYNO Healthcare Backend
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+model Hospital {
+  id                 String           @id @default(cuid())
+  name               String
+  email              String           @unique
+  password           String
+  registrationNumber String           @unique
+  address            String?
+  phone              String?
+  patients           Patient[]
+  tumorBoards        TumorBoardCase[]
+  activityLogs       ActivityLog[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model Patient {
+  id          String           @id @default(cuid())
+  patientId   String           @unique // External patient ID (e.g., PT-2024-001)
+  name        String
+  age         Int?
+  gender      String?          // male, female, other
+  cancerType  String?          // lung, breast, blood, etc.
+  status      String           @default("active") // active, discharged, critical, under_review
+  hospitalId  String?
+  hospital    Hospital?        @relation(fields: [hospitalId], references: [id])
+  reports     Report[]
+  aiReports   AIReport[]
+  tumorBoards TumorBoardCase[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  fileName   String
+  filePath   String
+  fileSize   Int
+  fileType   String   // PDF, DICOM, Image
+  category   String   // imaging, pathology, lab, clinical
+  status     String   @default("pending") // pending, ready, analyzed
+  patientId  String
+  patient    Patient  @relation(fields: [patientId], references: [id])
+  uploadedAt DateTime @default(now())
+}
+
+model AIReport {
+  id               String    @id @default(cuid())
+  patientId        String
+  patient          Patient   @relation(fields: [patientId], references: [id])
+  status           String    @default("queued") // queued, processing, completed, failed, cancelled
+  keyFindings      String?   // JSON string with findings
+  redFlags         String?   // JSON string with red flags
+  suggestedSteps   String?   // JSON string with next steps
+  imagingAnalysis  String?   // AI analysis of imaging reports
+  pathologyReview  String?   // AI analysis of pathology reports
+  clinicalNotes    String?   // AI-generated clinical correlation
+  riskScore        Int?      // 1-10 risk stratification score
+  generatedAt      DateTime  @default(now())
+  startedAt        DateTime? // When processing actually began
+  completedAt      DateTime? // When processing finished
+  reportCount      Int       @default(0) // Number of reports to process
+  estimatedSeconds Int?      // Estimated processing time
+  errorMessage     String?   // Error details if failed
+  reviewedAt       DateTime?
+  reviewedBy       String?   // Doctor/Staff name who reviewed
+}
+
+model TumorBoardCase {
+  id                    String    @id @default(cuid())
+  patientId             String
+  patient               Patient   @relation(fields: [patientId], references: [id])
+  hospitalId            String
+  hospital              Hospital  @relation(fields: [hospitalId], references: [id])
+  aiSummary             String?   // AI-generated case summary
+  aiTumorBoardJson      String?   // Full AI-generated tumor board JSON
+  radiologyNotes        String?   // Notes from radiology specialist
+  pathologyNotes        String?   // Notes from pathology specialist
+  oncologyNotes         String?   // Notes from oncology specialist
+  guidelinesRef         String?   // Reference to guidelines/research
+  recommendations       String?   // JSON string with checklist items
+  finalDecision         String?   // Final treatment decision
+  status                String    @default("draft") // draft, queued, processing, partial_ready, completed, failed, deleted
+  // Processing tracking
+  processingStartedAt   DateTime?
+  processingCompletedAt DateTime?
+  progressPercent       Int       @default(0) // 0-100
+  progressMessage       String?   // Current step description
+  errorMessage          String?   // Error details if failed
+  // Soft delete
+  deletedAt             DateTime?
+  deletedBy             String?   // Who deleted
+  // Timestamps
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  hospitalId  String
+  hospital    Hospital @relation(fields: [hospitalId], references: [id])
+  action      String   // upload, ai_analysis, review, login, patient_add, patient_update, tumor_board_create, etc.
+  entityType  String   // patient, report, ai_report, tumor_board, hospital
+  entityId    String?  // ID of the affected entity
+  description String   // Human-readable description
+  metadata    String?  // JSON string for additional data
+  performedBy String?  // User/staff who performed the action
+  createdAt   DateTime @default(now())
+}

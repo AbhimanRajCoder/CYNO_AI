@@ -1,0 +1,59 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cyno-backend
+    ports:
+      - "8000:8000"
+    environment:
+      # Database - PostgreSQL Production
+      - DATABASE_URL=${DATABASE_URL}
+
+      # JWT Authentication
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-cyno-healthcare-secret-key}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
+
+      # Server Configuration
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=false
+
+      # CORS Configuration
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
+
+      # File Upload
+      - UPLOAD_DIR=/app/uploads
+      - MAX_FILE_SIZE_MB=${MAX_FILE_SIZE_MB:-50}
+
+      # Azure Document Intelligence
+      - AZURE_DOC_INTELLIGENCE_ENDPOINT=${AZURE_DOC_INTELLIGENCE_ENDPOINT}
+      - AZURE_DOC_INTELLIGENCE_KEY=${AZURE_DOC_INTELLIGENCE_KEY}
+      - OCR_ENGINE=${OCR_ENGINE:-hybrid}
+
+      # Azure AI Agent Service
+      - AZURE_AI_AGENT_ENDPOINT=${AZURE_AI_AGENT_ENDPOINT}
+      - AZURE_AI_AGENT_KEY=${AZURE_AI_AGENT_KEY}
+      - AZURE_AGENT_ORCHESTRATION_ENABLED=${AZURE_AGENT_ORCHESTRATION_ENABLED:-true}
+
+      # Azure AI Services
+      - AZURE_AI_SERVICES_ENDPOINT=${AZURE_AI_SERVICES_ENDPOINT}
+      - AZURE_AI_SERVICES_KEY=${AZURE_AI_SERVICES_KEY}
+
+      # Groq API
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    volumes:
+      - uploads_data:/app/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  uploads_data:
+    driver: local

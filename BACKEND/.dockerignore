@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Local files
+.env.local
+*.log
+*.sqlite
+*.db
+
+# Prisma dev database (we use PostgreSQL in production)
+prisma/dev.db
+prisma/dev.db-journal
+
+# Uploads (mount as volume in production)
+uploads/*
+!uploads/.gitkeep
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Tests
+tests/
+pytest.ini
+.pytest_cache/
+.coverage
+htmlcov/
