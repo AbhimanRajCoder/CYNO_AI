@@ -39,7 +39,7 @@ class Settings:
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
     ALLOWED_ORIGINS: list = os.getenv(
         "ALLOWED_ORIGINS", 
-        "http://localhost:3000,http://127.0.0.1:3000"
+        "http://localhost:3000,http://127.0.0.1:3000,https://cyno-ai.vercel.app,https://cyno-ai.vercel.app/"
     ).split(",")
     
     # File Upload Configuration
