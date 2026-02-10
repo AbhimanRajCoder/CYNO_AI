@@ -29,9 +29,24 @@ services:
       - ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,https://cyno-ai.vercel.app
       # LLM Integration
       - GROQ_API_KEY=${GROQ_API_KEY}
-      # Azure Document Intelligence (optional)
-      - AZURE_FORM_RECOGNIZER_ENDPOINT=${AZURE_FORM_RECOGNIZER_ENDPOINT:-}
-      - AZURE_FORM_RECOGNIZER_KEY=${AZURE_FORM_RECOGNIZER_KEY:-}
+      # Azure Document Intelligence
+      - AZURE_DOC_INTELLIGENCE_ENDPOINT=${AZURE_DOC_INTELLIGENCE_ENDPOINT:-}
+      - AZURE_DOC_INTELLIGENCE_KEY=${AZURE_DOC_INTELLIGENCE_KEY:-}
+      # OCR Engine
+      - OCR_ENGINE=${OCR_ENGINE:-hybrid}
+      # Azure AI Agent Service
+      - AZURE_AI_AGENT_ENDPOINT=${AZURE_AI_AGENT_ENDPOINT:-}
+      - AZURE_AI_AGENT_KEY=${AZURE_AI_AGENT_KEY:-}
+      - AZURE_AGENT_ORCHESTRATION_ENABLED=${AZURE_AGENT_ORCHESTRATION_ENABLED:-true}
+      # Azure AI Services
+      - AZURE_AI_SERVICES_ENDPOINT=${AZURE_AI_SERVICES_ENDPOINT:-}
+      - AZURE_AI_SERVICES_KEY=${AZURE_AI_SERVICES_KEY:-}
+      # PostgreSQL Specifics (Optional if using DATABASE_URL, but good for reference)
+      - PGHOST=${PGHOST}
+      - PGUSER=${PGUSER}
+      - PGPORT=${PGPORT}
+      - PGDATABASE=${PGDATABASE}
+      - PGPASSWORD=${PGPASSWORD}
     volumes:
       # Persist uploads between container restarts
       - ./uploads:/app/uploads
